@@ -1,0 +1,9 @@
+project/
+│
+├── .env                   # Chứa Supabase URL/Key và GOOGLE_API_KEY
+├── main.py                 # Entry point chính, chạy server hoặc script
+├── supabase_client.py      # Chỉ để kết nối và lấy dữ liệu từ Supabase
+├── gemini_client.py        # Chỉ để gọi Gemini API
+├── prompt_builder.py       # Tạo prompt từ dữ liệu + câu hỏi người dùng
+├── utils.py                # Các hàm phụ trợ, lọc dữ liệu, format kết quả
+└── requirements.txt        # List các thư viện Python cần cài

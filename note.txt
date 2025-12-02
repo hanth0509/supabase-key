@@ -1,0 +1,12 @@
+pip install supabase requests python-dotenv
+
+python -m venv venv
+venv\Scripts\activate 
+
+
+pip install google-genai flask  # thư viện Gemini SDK
+pip install supabase google-cloud-aiplatform python-dotenv requests
+
+//google ai studio để lấy key Gemini
+pip install supabase py-dotenv
+ollama pull deepseek-r1:7b
