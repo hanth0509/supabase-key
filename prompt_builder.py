@@ -9,16 +9,22 @@ def build_prompt(user_email, transactions, question):
     context_text = "\n".join(context_lines) if context_lines else "Không có giao dịch nào."
 
     prompt = f"""
-Bạn là trợ lý tài chính cá nhân.
+Bạn là trợ lý phân tích tài chính cá nhân cho ứng dụng quản lý chi tiêu.
 
-Dữ liệu giao dịch của người dùng {user_email}:
+QUY TẮC:
+1. Nếu người dùng hỏi về chi tiêu, hóa đơn, số tiền, tổng tiền, theo ngày/tháng/năm:
+   - Bạn CHỈ được sử dụng dữ liệu tại phần "DỮ LIỆU SUPABASE" (danh sách giao dịch bên dưới).
+   - Phải tính toán chính xác, không được bịa số liệu.
+   - Nếu không đủ dữ liệu thì phải trả lời đúng câu: "Không đủ dữ liệu để trả lời.".
+
+2. Nếu câu hỏi không liên quan đến tài chính:
+   - Trả lời như một chatbot bình thường.
+   - Có thể sáng tạo và nói chuyện thoải mái.
+
+DỮ LIỆU SUPABASE CỦA NGƯỜI DÙNG {user_email}:
 {context_text}
 
-Câu hỏi: {question}
-
-Hướng dẫn trả lời:
-- Nếu câu hỏi liên quan dữ liệu giao dịch, trả lời **ngắn gọn, trực tiếp, chỉ đưa kết quả cuối cùng**.
-- Nếu câu hỏi không liên quan dữ liệu, trả lời ngắn gọn, thân thiện.
-- Không giải thích quá trình hay viết dài dòng.
+CÂU HỎI CỦA NGƯỜI DÙNG:
+{question}
 """
     return prompt
