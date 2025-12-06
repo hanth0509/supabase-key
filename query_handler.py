@@ -36,7 +36,7 @@ def handle_question(question, transactions):
         "tổng", "bao nhiêu", "tiền", "chi phí", "thu nhập", "thống kê",
         "đã chi", "đã thu", "số tiền", "hết bao nhiêu", "giao dịch",
         "income", "expense", "money", "spent", "earned", "tính", "tính tổng",
-        "chi", "thu", "lương", "bill", "hóa đơn", "nhiều nhất", "cao nhất",
+        "chi", "thu", "lương", "bill", "hóa đơn", "nhiều nhất", "cao nhất", "lớn nhất", "tốn kém nhất", "chi nhiều nhất", "ít nhất", "nhỏ nhất",
         # Time periods
         "hôm nay", "hôm qua", "tuần này", "tuần trước",
         "tháng này", "tháng trước", "năm nay", "năm ngoái",
@@ -121,6 +121,76 @@ def handle_question(question, transactions):
             end_date = (start_date + timedelta(days=89)).replace(day=1) - timedelta(days=1)
         time_period = f" quý trước (từ {start_date.strftime('%d/%m/%Y')} đến {end_date.strftime('%d/%m/%Y')})"
         time_period_display = "quý trước"
+
+    # Parse explicit month like "tháng 11" or "tháng 11/2025"
+    if "tháng " in question_lower and start_date is None and end_date is None:
+        import re
+        match = re.search(r"tháng\s+(\d{1,2})(?:/(\d{4}))?", question_lower)
+        if match:
+            month = int(match.group(1))
+            year = int(match.group(2)) if match.group(2) else today.year
+            if 1 <= month <= 12:
+                start_date = date(year, month, 1)
+                # tính ngày cuối tháng
+                if month == 12:
+                    next_month = date(year + 1, 1, 1)
+                else:
+                    next_month = date(year, month + 1, 1)
+                end_date = next_month - timedelta(days=1)
+                time_period = f" tháng {month}/{year}"
+                time_period_display = f"tháng {month}/{year}"
+
+    # Câu hỏi "nhiều nhất" / "lớn nhất" phải xử lý TRƯỚC khi trả thống kê chung
+    if any(x in question_lower for x in ["nhiều nhất", "cao nhất", "nhiều tiền nhất", "lớn nhất", "tốn kém nhất", "chi nhiều nhất"]):
+        is_expense = any(x in question_lower for x in ["chi tiêu", "expense", "chi phí", "đã chi", "chi ra"])
+        group = "expense" if is_expense else None
+
+        category, amount = find_highest_spending_category(
+            transactions,
+            group_name=group,
+            start_date=start_date,
+            end_date=end_date
+        )
+        if not category or amount <= 0:
+            return None, "Không đủ dữ liệu để trả lời."
+
+        amount_fmt = format_currency(amount)
+        period_text = f"{time_period_display} " if time_period_display else ""
+        if is_expense:
+            return amount, f"Bạn chi nhiều nhất cho {category} {period_text}là {amount_fmt}"
+        else:
+            return amount, f"Danh mục có số tiền lớn nhất {period_text}là {category} ({amount_fmt})"
+
+    # Câu hỏi "ít nhất" / "nhỏ nhất" cho chi tiêu
+    if any(x in question_lower for x in ["ít nhất", "nhỏ nhất"]):
+        # Mặc định hiểu là chi tiêu nếu không nói rõ
+        is_expense = any(x in question_lower for x in ["chi tiêu", "expense", "chi phí", "đã chi"]) or True
+        if is_expense:
+            stats = get_transaction_stats(
+                transactions,
+                group_name="expense",
+                start_date=start_date,
+                end_date=end_date
+            )
+            if not stats['by_category']:
+                return None, "Không đủ dữ liệu để trả lời."
+
+            # Tìm danh mục có chi tiêu nhỏ nhất > 0
+            min_cat = None
+            min_val = None
+            for cat, val in stats['by_category'].items():
+                if val <= 0:
+                    continue
+                if min_val is None or val < min_val:
+                    min_val = val
+                    min_cat = cat
+
+            if not min_cat or min_val is None:
+                return None, "Không đủ dữ liệu để trả lời."
+
+            amount_fmt = format_currency(min_val)
+            period_text = f"{time_period_display} " if time_period_display else ""
+            return min_val, f"Danh mục bạn chi ít nhất {period_text}là {min_cat} ({amount_fmt})"
 
     # Thu nhập
     if any(x in question_lower for x in ["thu nhập", "lương", "income", "tiền lương"]):

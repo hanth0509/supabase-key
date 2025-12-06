@@ -264,6 +264,16 @@ def find_highest_spending_category(transactions, group_name=None, start_date=Non
 
             # Lọc theo ngày nếu có
             t_date = t.get("date")
+            if t_date and isinstance(t_date, str):
+                try:
+                    from datetime import datetime
+                    t_date = datetime.strptime(t_date, "%Y-%m-%d").date()
+                except Exception:
+                    t_date = None
+            elif t_date and hasattr(t_date, "date"):
+                # Trường hợp datetime
+                t_date = t_date.date()
+
             if start_date and t_date and t_date < start_date:
                 continue
             if end_date and t_date and t_date > end_date:
