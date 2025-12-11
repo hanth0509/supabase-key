@@ -138,23 +138,30 @@ def get_transaction_stats(transactions, group_name=None, category_name=None, sta
             # Debug info
             print(f"[DEBUG] Processing transaction - Amount: {amount}, Date: {t_date}, Category: {category}, Group: {group}")
             
+            # Chuẩn hóa t_date về kiểu date để so sánh
+            if t_date:
+                try:
+                    from datetime import datetime, date as _date
+                    if isinstance(t_date, str):
+                        t_date = datetime.strptime(t_date, '%Y-%m-%d').date()
+                    elif isinstance(t_date, datetime):
+                        t_date = t_date.date()
+                    elif isinstance(t_date, _date):
+                        # đã là date, giữ nguyên
+                        pass
+                except Exception as e:
+                    print(f"[WARNING] Could not normalize date {t_date}: {e}")
+                    t_date = None
+
             # Apply filters
             if target_group and group != target_group:
                 continue
             if target_category and target_category not in category:
                 continue
-            if start_date and t_date and isinstance(t_date, str):
-                try:
-                    from datetime import datetime
-                    t_date = datetime.strptime(t_date, '%Y-%m-%d').date()
-                except:
-                    pass
-            if start_date and t_date and hasattr(t_date, 'date'):
-                if t_date.date() < start_date:
-                    continue
-            if end_date and t_date and hasattr(t_date, 'date'):
-                if t_date.date() > end_date:
-                    continue
+            if start_date and t_date and t_date < start_date:
+                continue
+            if end_date and t_date and t_date > end_date:
+                continue
             
             # Update statistics
             stats['total'] += amount
