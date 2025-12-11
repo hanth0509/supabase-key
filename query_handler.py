@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, date
 from data_processor import get_transaction_stats, format_stats, find_highest_spending_category, format_currency
+import random
 
 def parse_date(date_str, date_format='%Y-%m-%d'):
     """Parse date string to date object"""
@@ -28,7 +29,14 @@ def handle_question(question, transactions):
         "chao ban"
     ]
     if question_lower in greeting_phrases:
-        return None, "Chào bạn! Tôi có thể giúp gì bạn hôm nay?"
+        greeting_responses = [
+            "Chào bạn! Tôi có thể giúp gì bạn hôm nay?",
+            "Xin chào! Bạn đang muốn xem chi tiêu hay thu nhập?",
+            "Hello, mình có thể hỗ trợ bạn xem tổng tiền hoặc hóa đơn.",
+            "Chào bạn, mình có thể giúp bạn phân tích chi tiêu theo tháng/năm.",
+            "Xin chào! Hãy hỏi mình về tổng tiền, hóa đơn hoặc danh mục chi tiêu nhé."
+        ]
+        return None, random.choice(greeting_responses)
     
     # Detect finance / transaction-related question
     finance_keywords = [
@@ -295,6 +303,65 @@ def handle_question(question, transactions):
         'sửa chữa': 'repairs',
         'bảo hiểm': 'insurance'
     }
+
+    # So sánh hai danh mục trong cùng một khoảng thời gian
+    # Ví dụ: "so sánh tiền điện và tiền nước tháng 11"
+    if "so sánh" in question_lower or "so sanh" in question_lower:
+        matched_categories = []  # danh sách (keyword, mapped_category)
+        for keyword, category in category_mapping.items():
+            if keyword in question_lower:
+                if category not in [c for _, c in matched_categories]:
+                    matched_categories.append((keyword, category))
+            if len(matched_categories) >= 2:
+                break
+
+        if len(matched_categories) >= 2:
+            (kw1, cat1), (kw2, cat2) = matched_categories[0], matched_categories[1]
+
+            stats1 = get_transaction_stats(
+                transactions,
+                category_name=cat1,
+                start_date=start_date,
+                end_date=end_date
+            )
+            stats2 = get_transaction_stats(
+                transactions,
+                category_name=cat2,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+            # Nếu cả hai đều không có giao dịch thì coi như không đủ dữ liệu
+            if stats1['count'] == 0 and stats2['count'] == 0:
+                return None, "Không đủ dữ liệu để trả lời."
+
+            total1 = stats1['total'] if stats1['count'] > 0 else 0
+            total2 = stats2['total'] if stats2['count'] > 0 else 0
+
+            # Nếu cả hai đều 0 thì cũng xem như không có dữ liệu ý nghĩa
+            if total1 == 0 and total2 == 0:
+                return None, "Không đủ dữ liệu để trả lời."
+
+            fmt1 = format_currency(total1)
+            fmt2 = format_currency(total2)
+            diff = abs(total1 - total2)
+            diff_fmt = format_currency(diff) if diff != 0 else None
+
+            period_text = f" {time_period_display}" if time_period_display else ""
+
+            if total1 > total2:
+                if diff_fmt:
+                    return diff, f"Bạn chi cho {kw1}{period_text} nhiều hơn {kw2} là {diff_fmt} ({fmt1} so với {fmt2})."
+                else:
+                    return total1, f"Bạn chi cho {kw1}{period_text} nhiều hơn {kw2}."
+            elif total2 > total1:
+                if diff_fmt:
+                    return diff, f"Bạn chi cho {kw2}{period_text} nhiều hơn {kw1} là {diff_fmt} ({fmt2} so với {fmt1})."
+                else:
+                    return total2, f"Bạn chi cho {kw2}{period_text} nhiều hơn {kw1}."
+            else:
+                # total1 == total2
+                return total1, f"Bạn chi cho {kw1} và {kw2}{period_text} bằng nhau ({fmt1})."
 
     for keyword, category in category_mapping.items():
         if keyword in question_lower:

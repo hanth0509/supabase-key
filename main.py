@@ -2,6 +2,7 @@ from supabase_client import get_user_by_email, get_wallets_by_user_id, get_trans
 from query_handler import handle_question
 from ollama_client import ask_ollama
 import os
+import random
 
 def clear_screen():
     """Clear the console screen."""
@@ -117,7 +118,14 @@ def main():
                         "chao ban"
                     ]
                     if question_lower in greeting_phrases:
-                        print("\n Chào bạn! Tôi có thể giúp gì bạn hôm nay?")
+                        greeting_responses = [
+                            "Chào bạn! Tôi có thể giúp gì bạn hôm nay?",
+                            "Xin chào! Bạn muốn xem chi tiêu hay thu nhập?",
+                            "Hello, mình có thể hỗ trợ bạn xem tổng tiền hoặc hóa đơn.",
+                            "Chào bạn, bạn đang quan tâm đến chi tiêu hay thống kê tổng quan?",
+                            "Xin chào! Hãy hỏi mình về tổng tiền, hóa đơn hoặc danh mục chi tiêu nhé."
+                        ]
+                        print("\n " + random.choice(greeting_responses))
                         continue
                     
                     # Process with query_handler (dùng dữ liệu Supabase cho câu hỏi tài chính)
